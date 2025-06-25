@@ -1,0 +1,40 @@
+{
+  "name": "@bible/translations",
+  "version": "1.0.0",
+  "description": "Translation utilities for Bible application",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "bible",
+    "translations",
+    "i18n",
+    "localization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@bible/eslint-config/lib.js"
+    ]
+  },
+  "prettier": "@bible/prettier"
+}
