@@ -1,0 +1,12 @@
+{
+  "name": "@bible/prettier",
+  "version": "0.0.0",
+  "main": "index.mjs",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.6.6"
+  },
+  "prettier": "@bible/prettier"
+}
