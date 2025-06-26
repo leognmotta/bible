@@ -53,11 +53,15 @@ interface Pagination {
     number: number
     reference: string
     verses: number
+    book?: string
+    bookName?: string
   } | null
   nextChapter?: {
     number: number
     reference: string
     verses: number
+    book?: string
+    bookName?: string
   } | null
 }
 
@@ -158,9 +162,27 @@ export default function ScriptureReader({
 
   const goToPrevChapter = () => {
     if (chapterData?.pagination.prevChapter) {
-      const newChapter = chapterData.pagination.prevChapter.number
+      const prevChapter = chapterData.pagination.prevChapter
+      const newChapter = prevChapter.number
+
+      // Check if we're switching books
+      if (prevChapter.book && prevChapter.book !== chapterData.book.code) {
+        // Find the book name by code to update selectedBook
+        const targetBook = books.find((book) =>
+          book.name
+            .toLowerCase()
+            .includes(prevChapter.bookName?.toLowerCase() || ''),
+        )
+        if (targetBook) {
+          setSelectedBook(targetBook.name.toLowerCase())
+        }
+      }
+
       setSelectedChapter(newChapter)
-      loadChapter(selectedBook, newChapter)
+      loadChapter(
+        prevChapter.bookName?.toLowerCase() || selectedBook,
+        newChapter,
+      )
       // Scroll to top on mobile
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -168,9 +190,27 @@ export default function ScriptureReader({
 
   const goToNextChapter = () => {
     if (chapterData?.pagination.nextChapter) {
-      const newChapter = chapterData.pagination.nextChapter.number
+      const nextChapter = chapterData.pagination.nextChapter
+      const newChapter = nextChapter.number
+
+      // Check if we're switching books
+      if (nextChapter.book && nextChapter.book !== chapterData.book.code) {
+        // Find the book name by code to update selectedBook
+        const targetBook = books.find((book) =>
+          book.name
+            .toLowerCase()
+            .includes(nextChapter.bookName?.toLowerCase() || ''),
+        )
+        if (targetBook) {
+          setSelectedBook(targetBook.name.toLowerCase())
+        }
+      }
+
       setSelectedChapter(newChapter)
-      loadChapter(selectedBook, newChapter)
+      loadChapter(
+        nextChapter.bookName?.toLowerCase() || selectedBook,
+        newChapter,
+      )
       // Scroll to top on mobile
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -261,7 +301,11 @@ export default function ScriptureReader({
                 className="flex h-12 flex-1 items-center justify-center text-sm"
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
-                Anterior
+                {chapterData?.pagination.prevChapter?.book &&
+                chapterData.pagination.prevChapter.book !==
+                  chapterData.book.code
+                  ? chapterData?.pagination.prevChapter?.bookName || 'Anterior'
+                  : 'Anterior'}
               </Button>
 
               <div className="flex min-w-[80px] items-center justify-center">
@@ -279,7 +323,11 @@ export default function ScriptureReader({
                 disabled={!chapterData?.pagination.nextChapter || loading}
                 className="flex h-12 flex-1 items-center justify-center text-sm"
               >
-                Próximo
+                {chapterData?.pagination.nextChapter?.book &&
+                chapterData.pagination.nextChapter.book !==
+                  chapterData.book.code
+                  ? chapterData?.pagination.nextChapter?.bookName || 'Próximo'
+                  : 'Próximo'}
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -294,7 +342,11 @@ export default function ScriptureReader({
               >
                 <ChevronLeft className="h-4 w-4" />
                 {chapterData?.pagination.prevChapter
-                  ? `Capítulo ${chapterData.pagination.prevChapter.number}`
+                  ? chapterData.pagination.prevChapter.book &&
+                    chapterData.pagination.prevChapter.book !==
+                      chapterData.book.code
+                    ? `${chapterData.pagination.prevChapter.bookName} ${chapterData.pagination.prevChapter.number}`
+                    : `Capítulo ${chapterData.pagination.prevChapter.number}`
                   : 'Capítulo Anterior'}
               </Button>
 
@@ -314,7 +366,11 @@ export default function ScriptureReader({
                 className="flex h-12 items-center gap-2"
               >
                 {chapterData?.pagination.nextChapter
-                  ? `Capítulo ${chapterData.pagination.nextChapter.number}`
+                  ? chapterData.pagination.nextChapter.book &&
+                    chapterData.pagination.nextChapter.book !==
+                      chapterData.book.code
+                    ? `${chapterData.pagination.nextChapter.bookName} ${chapterData.pagination.nextChapter.number}`
+                    : `Capítulo ${chapterData.pagination.nextChapter.number}`
                   : 'Próximo Capítulo'}
                 <ChevronRight className="h-4 w-4" />
               </Button>
