@@ -15,13 +15,13 @@ import {
   getTranslation,
   searchVerses,
   validateNumber,
-} from '../../../lib/api/bible-utils'
+} from '@/lib/api/bible-utils'
 import {
   BOOK_ABBREVIATIONS,
   getBookAliases,
   isValidBookName,
   searchBooks,
-} from '../../../lib/api/book-abbreviations'
+} from '@/lib/api/book-abbreviations'
 
 export const runtime = 'edge'
 
