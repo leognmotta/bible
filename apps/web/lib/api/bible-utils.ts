@@ -1,29 +1,9 @@
-import { loadTranslation } from '@bible/translations'
+import { type Book, loadTranslation, type Scripture } from '@bible/translations'
 
 import { normalizeBookName } from './book-abbreviations'
-
-// Define types locally to avoid import issues
-interface Verse {
-  verse: number
-  chapter: number
-  name: string
-  text: string
-}
-
-interface Chapter {
-  chapter: number
-  name: string
-  verses: Verse[]
-}
-
-interface Book {
-  chapters: Chapter[]
-  name: string
-}
-
-interface Translation {
-  books: Book[]
-}
+import { bookSummaries } from './book-summaries'
+// Scripture map for converting codes to names
+import { scriptureMap } from './scripture-map'
 
 // Custom error classes
 export class BibleAPIError extends Error {
@@ -50,16 +30,19 @@ export class ValidationError extends BibleAPIError {
 }
 
 // Cache for loaded translations
-const translationCache = new Map<string, Translation>()
+const translationCache = new Map<string, Scripture>()
 
 // Utility: Load translation with caching
-export async function getTranslation(key: string): Promise<Translation> {
+export async function getTranslation(key: string): Promise<Scripture> {
   if (translationCache.has(key)) {
     return translationCache.get(key)!
   }
 
   try {
     const translation = await loadTranslation(key)
+    if (!translation) {
+      throw new NotFoundError(`Translation '${key}'`)
+    }
     translationCache.set(key, translation)
     return translation
   } catch (error) {
@@ -67,39 +50,63 @@ export async function getTranslation(key: string): Promise<Translation> {
   }
 }
 
-// Utility: Find book in translation (supports abbreviations)
-export function findBook(translation: Translation, bookName: string): Book {
-  // First normalize the book name (convert abbreviations to full names)
-  const normalizedInput = normalizeBookName(bookName)
+// Utility: Find book in translation (supports abbreviations and codes)
+export function findBook(translation: Scripture, bookInput: string): Book {
+  const inputLower = bookInput.toLowerCase().trim()
 
-  // Try to find the book using the normalized name
-  let book = translation.books.find(
-    (b: Book) => b.name.toLowerCase() === normalizedInput,
+  // First try to find by code (like 'gn', 'ex', etc.)
+  let book = translation.find((b: Book) => b.code.toLowerCase() === inputLower)
+
+  if (book) {
+    return book
+  }
+
+  // Try to find by name (like 'Genesis', 'Exodus', etc.)
+  book = translation.find((b: NewBook) => b.name.toLowerCase() === inputLower)
+
+  if (book) {
+    return book
+  }
+
+  // Try to find by normalized name (convert abbreviations to full names)
+  const normalizedInput = normalizeBookName(inputLower)
+  book = translation.find(
+    (b: NewBook) => b.name.toLowerCase() === normalizedInput,
   )
 
-  // If not found with normalized name, try direct match
-  if (!book) {
-    book = translation.books.find(
-      (b: Book) => b.name.toLowerCase() === bookName.toLowerCase(),
+  if (book) {
+    return book
+  }
+
+  // Try to find by code using the scripture map
+  const scriptureMapEntry = Object.entries(scriptureMap).find(
+    ([code, names]) =>
+      code.toLowerCase() === inputLower ||
+      names.en.toLowerCase() === inputLower ||
+      names['pt-br'].toLowerCase() === inputLower,
+  )
+
+  if (scriptureMapEntry) {
+    book = translation.find(
+      (b: NewBook) =>
+        b.code.toLowerCase() === scriptureMapEntry[0].toLowerCase(),
     )
+    if (book) {
+      return book
+    }
   }
 
-  // If still not found, try partial matching
-  if (!book) {
-    book = translation.books.find((b: Book) => {
-      const bookNameLower = b.name.toLowerCase()
-      const inputLower = bookName.toLowerCase()
-
-      // Check if book name contains the input or vice versa
-      return (
-        bookNameLower.includes(inputLower) || inputLower.includes(bookNameLower)
-      )
-    })
-  }
+  // Try partial matching
+  book = translation.find((b: NewBook) => {
+    const bookNameLower = b.name.toLowerCase()
+    return (
+      bookNameLower.includes(inputLower) || inputLower.includes(bookNameLower)
+    )
+  })
 
   if (!book) {
     throw new NotFoundError(
-      `Book '${bookName}' (searched as '${normalizedInput}')`,
+      `Book '${bookInput}' (searched as '${normalizedInput}')`,
     )
   }
 
@@ -107,25 +114,21 @@ export function findBook(translation: Translation, bookName: string): Book {
 }
 
 // Utility: Find chapter in book
-export function findChapter(book: Book, chapterNum: number): Chapter {
-  const chapter = book.chapters.find((c: Chapter) => c.chapter === chapterNum)
-
-  if (!chapter) {
+export function findChapter(book: NewBook, chapterNum: number): string[] {
+  if (chapterNum < 1 || chapterNum > book.chapters.length) {
     throw new NotFoundError(`Chapter ${chapterNum} in book '${book.name}'`)
   }
 
-  return chapter
+  return book.chapters[chapterNum - 1] // Convert to 0-based index
 }
 
 // Utility: Find verse in chapter
-export function findVerse(chapter: Chapter, verseNum: number): Verse {
-  const verse = chapter.verses.find((v: Verse) => v.verse === verseNum)
-
-  if (!verse) {
-    throw new NotFoundError(`Verse ${verseNum} in chapter ${chapter.chapter}`)
+export function findVerse(chapter: string[], verseNum: number): string {
+  if (verseNum < 1 || verseNum > chapter.length) {
+    throw new NotFoundError(`Verse ${verseNum} in chapter`)
   }
 
-  return verse
+  return chapter[verseNum - 1] // Convert to 0-based index
 }
 
 // Utility: Validate numeric parameters
@@ -139,75 +142,118 @@ export function validateNumber(value: string, name: string): number {
 
 // Utility: Filter verses by range
 export function filterVersesByRange(
-  verses: Verse[],
+  chapter: string[],
   from?: string,
   to?: string,
-): Verse[] {
-  if (!from && !to) return verses
-
+): Array<{ verse: number; text: string }> {
   const fromVerse = from ? validateNumber(from, 'from') : 1
-  const toVerse = to ? validateNumber(to, 'to') : verses.length
+  const toVerse = to ? validateNumber(to, 'to') : chapter.length
 
   if (fromVerse > toVerse) {
     throw new ValidationError("'from' cannot be greater than 'to'")
   }
 
-  return verses.filter((v: Verse) => v.verse >= fromVerse && v.verse <= toVerse)
+  const filteredVerses: Array<{ verse: number; text: string }> = []
+  for (let i = fromVerse - 1; i < Math.min(toVerse, chapter.length); i++) {
+    filteredVerses.push({
+      verse: i + 1,
+      text: chapter[i],
+    })
+  }
+
+  return filteredVerses
 }
 
-// Utility: Format verse response
-export function formatVerse(
-  verse: Verse,
-  bookName: string,
-  chapterNum: number,
-  translationKey: string = 'nva',
-) {
+// Utility: Format simple verse response (just number and text)
+export function formatSimpleVerse(verseText: string, verseNum: number) {
   return {
-    verse: verse.verse,
-    chapter: chapterNum,
-    book: bookName,
-    translation: translationKey,
-    name: `${bookName} ${chapterNum}:${verse.verse}`,
-    text: verse.text,
+    verse: verseNum,
+    text: verseText,
   }
 }
 
-// Utility: Format chapter response
-export function formatChapter(
-  chapter: Chapter,
-  bookName: string,
+// Utility: Format translation info
+export function formatTranslationInfo(translationKey: string = 'nva') {
+  return {
+    key: translationKey,
+    name:
+      translationKey === 'nva'
+        ? 'Nova Versão de Acesso Livre (NVA)'
+        : translationKey,
+    language: 'pt-BR',
+  }
+}
+
+// Utility: Format book info with summary
+export function formatBookData(book: Book) {
+  return {
+    code: book.code,
+    name: book.name,
+    summary: bookSummaries[book.code] || 'No summary available.',
+    chapters: book.chapters.length,
+  }
+}
+
+// Utility: Format chapter response with new format
+export function formatChapterResponse(
+  chapter: string[],
+  chapterNum: number,
+  book: Book,
   translationKey: string = 'nva',
   versesFilter?: { from?: string; to?: string },
 ) {
-  const filteredVerses = versesFilter
-    ? filterVersesByRange(chapter.verses, versesFilter.from, versesFilter.to)
-    : chapter.verses
+  const verses = versesFilter
+    ? filterVersesByRange(chapter, versesFilter.from, versesFilter.to)
+    : chapter.map((text, index) => ({ verse: index + 1, text }))
 
   return {
-    translation: translationKey,
-    book: bookName,
-    chapter: chapter.chapter,
-    name: chapter.name,
-    verses: filteredVerses.map((verse: Verse) =>
-      formatVerse(verse, bookName, chapter.chapter, translationKey),
-    ),
+    translation: formatTranslationInfo(translationKey),
+    book: formatBookData(book),
+    chapter: {
+      number: chapterNum,
+      name: `${book.name} ${chapterNum}`,
+    },
+    verses: verses.map(({ verse, text }) => formatSimpleVerse(text, verse)),
+  }
+}
+
+// Utility: Format single verse response with new format
+export function formatVerseResponse(
+  verseText: string,
+  verseNum: number,
+  chapterNum: number,
+  book: Book,
+  translationKey: string = 'nva',
+) {
+  return {
+    translation: formatTranslationInfo(translationKey),
+    book: formatBookData(book),
+    chapter: {
+      number: chapterNum,
+      name: `${book.name} ${chapterNum}`,
+    },
+    verse: {
+      number: verseNum,
+      text: verseText,
+      reference: `${book.name} ${chapterNum}:${verseNum}`,
+    },
   }
 }
 
 // Utility: Format book info
-export function formatBookInfo(book: Book, translationKey: string = 'nva') {
+export function formatBookInfo(book: NewBook, translationKey: string = 'nva') {
   return {
     translation: translationKey,
     name: book.name,
     displayName: book.name,
-    chapters: book.chapters.map((chapter: Chapter) => ({
-      chapter: chapter.chapter,
-      name: chapter.name,
-      verses: chapter.verses.length,
+    chapters: book.chapters.map((chapter, index) => ({
+      chapter: index + 1,
+      name: `${book.name} ${index + 1}`,
+      verses: chapter.length,
     })),
     totalChapters: book.chapters.length,
     totalVerses: book.chapters.reduce(
-      (total: number, chapter: Chapter) => total + chapter.verses.length,
+      (total, chapter) => total + chapter.length,
       0,
     ),
   }
@@ -227,7 +273,7 @@ export function getAvailableTranslations() {
 
 // Utility: Search verses in translation
 export function searchVerses(
-  translation: Translation,
+  translation: NewTranslation,
   query: string,
   translationKey: string = 'nva',
   limit: number = 20,
@@ -235,12 +281,24 @@ export function searchVerses(
   const results: ReturnType<typeof formatVerse>[] = []
   const searchTerm = query.toLowerCase()
 
-  for (const book of translation.books) {
-    for (const chapter of book.chapters) {
-      for (const verse of chapter.verses) {
-        if (verse.text.toLowerCase().includes(searchTerm)) {
+  for (const book of translation) {
+    for (
+      let chapterIndex = 0;
+      chapterIndex < book.chapters.length;
+      chapterIndex++
+    ) {
+      const chapter = book.chapters[chapterIndex]
+      for (let verseIndex = 0; verseIndex < chapter.length; verseIndex++) {
+        const verseText = chapter[verseIndex]
+        if (verseText.toLowerCase().includes(searchTerm)) {
           results.push(
-            formatVerse(verse, book.name, chapter.chapter, translationKey),
+            formatVerse(
+              verseText,
+              verseIndex + 1,
+              book.name,
+              chapterIndex + 1,
+              translationKey,
+            ),
           )
           if (results.length >= limit) {
             return results
@@ -255,7 +313,7 @@ export function searchVerses(
 
 // Utility: Get multiple chapters
 export function getMultipleChapters(
-  book: Book,
+  book: NewBook,
   fromChapter: number,
   toChapter: number,
   translationKey: string = 'nva',
@@ -266,13 +324,20 @@ export function getMultipleChapters(
     )
   }
 
-  const chapters = book.chapters.filter(
-    (c: Chapter) => c.chapter >= fromChapter && c.chapter <= toChapter,
-  )
+  if (fromChapter < 1 || toChapter > book.chapters.length) {
+    throw new ValidationError(
+      `Chapter range ${fromChapter}-${toChapter} is invalid for book '${book.name}'`,
+    )
+  }
 
-  return chapters.map((chapter: Chapter) =>
-    formatChapter(chapter, book.name, translationKey),
-  )
+  const chapters = []
+  for (let i = fromChapter - 1; i < toChapter; i++) {
+    chapters.push(
+      formatChapter(book.chapters[i], i + 1, book.name, translationKey),
+    )
+  }
+
+  return chapters
 }
 
 // Utility: Error response formatter
