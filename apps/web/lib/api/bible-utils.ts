@@ -62,7 +62,7 @@ export function findBook(translation: Scripture, bookInput: string): Book {
   }
 
   // Try to find by name (like 'Genesis', 'Exodus', etc.)
-  book = translation.find((b: NewBook) => b.name.toLowerCase() === inputLower)
+  book = translation.find((b) => b.name.toLowerCase() === inputLower)
 
   if (book) {
     return book
@@ -70,9 +70,7 @@ export function findBook(translation: Scripture, bookInput: string): Book {
 
   // Try to find by normalized name (convert abbreviations to full names)
   const normalizedInput = normalizeBookName(inputLower)
-  book = translation.find(
-    (b: NewBook) => b.name.toLowerCase() === normalizedInput,
-  )
+  book = translation.find((b) => b.name.toLowerCase() === normalizedInput)
 
   if (book) {
     return book
@@ -88,8 +86,7 @@ export function findBook(translation: Scripture, bookInput: string): Book {
 
   if (scriptureMapEntry) {
     book = translation.find(
-      (b: NewBook) =>
-        b.code.toLowerCase() === scriptureMapEntry[0].toLowerCase(),
+      (b) => b.code.toLowerCase() === scriptureMapEntry[0].toLowerCase(),
     )
     if (book) {
       return book
@@ -97,7 +94,7 @@ export function findBook(translation: Scripture, bookInput: string): Book {
   }
 
   // Try partial matching
-  book = translation.find((b: NewBook) => {
+  book = translation.find((b) => {
     const bookNameLower = b.name.toLowerCase()
     return (
       bookNameLower.includes(inputLower) || inputLower.includes(bookNameLower)
@@ -114,7 +111,7 @@ export function findBook(translation: Scripture, bookInput: string): Book {
 }
 
 // Utility: Find chapter in book
-export function findChapter(book: NewBook, chapterNum: number): string[] {
+export function findChapter(book: Book, chapterNum: number): string[] {
   if (chapterNum < 1 || chapterNum > book.chapters.length) {
     throw new NotFoundError(`Chapter ${chapterNum} in book '${book.name}'`)
   }
@@ -194,6 +191,73 @@ export function formatBookData(book: Book) {
   }
 }
 
+// Utility: Get pagination metadata for verse
+export function getVersePagination(
+  book: Book,
+  chapterNum: number,
+  verseNum: number,
+) {
+  const currentChapter = book.chapters[chapterNum - 1]
+  const isFirstVerse = verseNum === 1
+  const isLastVerse = verseNum === currentChapter.length
+  const isFirstChapter = chapterNum === 1
+  const isLastChapter = chapterNum === book.chapters.length
+
+  return {
+    prevVerse: isFirstVerse
+      ? null
+      : {
+          number: verseNum - 1,
+          reference: `${book.name} ${chapterNum}:${verseNum - 1}`,
+        },
+    nextVerse: isLastVerse
+      ? null
+      : {
+          number: verseNum + 1,
+          reference: `${book.name} ${chapterNum}:${verseNum + 1}`,
+        },
+    prevChapter:
+      isFirstVerse && !isFirstChapter
+        ? {
+            number: chapterNum - 1,
+            reference: `${book.name} ${chapterNum - 1}`,
+            lastVerse: book.chapters[chapterNum - 2].length,
+          }
+        : null,
+    nextChapter:
+      isLastVerse && !isLastChapter
+        ? {
+            number: chapterNum + 1,
+            reference: `${book.name} ${chapterNum + 1}`,
+            firstVerse: 1,
+          }
+        : null,
+  }
+}
+
+// Utility: Get pagination metadata for chapter
+export function getChapterPagination(book: Book, chapterNum: number) {
+  const isFirstChapter = chapterNum === 1
+  const isLastChapter = chapterNum === book.chapters.length
+
+  return {
+    prevChapter: isFirstChapter
+      ? null
+      : {
+          number: chapterNum - 1,
+          reference: `${book.name} ${chapterNum - 1}`,
+          verses: book.chapters[chapterNum - 2].length,
+        },
+    nextChapter: isLastChapter
+      ? null
+      : {
+          number: chapterNum + 1,
+          reference: `${book.name} ${chapterNum + 1}`,
+          verses: book.chapters[chapterNum].length,
+        },
+  }
+}
+
 // Utility: Format chapter response with new format
 export function formatChapterResponse(
   chapter: string[],
@@ -212,8 +276,10 @@ export function formatChapterResponse(
     chapter: {
       number: chapterNum,
       name: `${book.name} ${chapterNum}`,
+      totalVerses: chapter.length,
     },
     verses: verses.map(({ verse, text }) => formatSimpleVerse(text, verse)),
+    pagination: getChapterPagination(book, chapterNum),
   }
 }
 
@@ -237,11 +303,12 @@ export function formatVerseResponse(
       text: verseText,
       reference: `${book.name} ${chapterNum}:${verseNum}`,
     },
+    pagination: getVersePagination(book, chapterNum, verseNum),
   }
 }
 
 // Utility: Format book info
-export function formatBookInfo(book: NewBook, translationKey: string = 'nva') {
+export function formatBookInfo(book: Book, translationKey: string = 'nva') {
   return {
     translation: translationKey,
     name: book.name,
@@ -273,12 +340,12 @@ export function getAvailableTranslations() {
 
 // Utility: Search verses in translation
 export function searchVerses(
-  translation: NewTranslation,
+  translation: Scripture,
   query: string,
   translationKey: string = 'nva',
   limit: number = 20,
 ) {
-  const results: ReturnType<typeof formatVerse>[] = []
+  const results: ReturnType<typeof formatVerseResponse>[] = []
   const searchTerm = query.toLowerCase()
 
   for (const book of translation) {
@@ -292,11 +359,11 @@ export function searchVerses(
         const verseText = chapter[verseIndex]
         if (verseText.toLowerCase().includes(searchTerm)) {
           results.push(
-            formatVerse(
+            formatVerseResponse(
               verseText,
               verseIndex + 1,
-              book.name,
               chapterIndex + 1,
+              book,
               translationKey,
             ),
           )
@@ -313,7 +380,7 @@ export function searchVerses(
 
 // Utility: Get multiple chapters
 export function getMultipleChapters(
-  book: NewBook,
+  book: Book,
   fromChapter: number,
   toChapter: number,
   translationKey: string = 'nva',
@@ -333,7 +400,7 @@ export function getMultipleChapters(
   const chapters = []
   for (let i = fromChapter - 1; i < toChapter; i++) {
     chapters.push(
-      formatChapter(book.chapters[i], i + 1, book.name, translationKey),
+      formatChapterResponse(book.chapters[i], i + 1, book, translationKey),
     )
   }
 
