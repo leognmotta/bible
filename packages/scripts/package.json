@@ -1,0 +1,24 @@
+{
+  "name": "@bible/scripts",
+  "version": "1.0.0",
+  "description": "TypeScript scripts for Bible application",
+  "type": "module",
+  "scripts": {
+    "format-scripture": "tsx src/format-scripture.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@bible/eslint-config/node.js"
+    ]
+  },
+  "prettier": "@bible/prettier"
+}
