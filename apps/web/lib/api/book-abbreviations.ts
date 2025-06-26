@@ -1,10 +1,11 @@
 // Bible Book Abbreviations Mapping
 // Supports multiple abbreviation formats for maximum compatibility
+// pt-BR abbreviations follow official Brazilian Portuguese biblical standards
 
 export const BOOK_ABBREVIATIONS: Record<string, string[]> = {
   // Old Testament
   genesis: ['gn', 'gen', 'ge', 'gênesis'],
-  exodus: ['ex', 'exo', 'êxodo'],
+  exodus: ['êx', 'ex', 'exo', 'êxodo'],
   leviticus: ['lv', 'lev', 'le', 'levítico'],
   numbers: ['nm', 'num', 'nu', 'números'],
   deuteronomy: ['dt', 'deu', 'de', 'deuteronômio'],
