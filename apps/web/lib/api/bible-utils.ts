@@ -235,26 +235,70 @@ export function getVersePagination(
   }
 }
 
-// Utility: Get pagination metadata for chapter
-export function getChapterPagination(book: Book, chapterNum: number) {
+// Utility: Get pagination metadata for chapter with cross-book navigation
+export function getChapterPagination(
+  book: Book,
+  chapterNum: number,
+  allBooks?: Scripture,
+) {
   const isFirstChapter = chapterNum === 1
   const isLastChapter = chapterNum === book.chapters.length
 
+  let prevChapter = null
+  let nextChapter = null
+
+  if (!isFirstChapter) {
+    // Previous chapter in same book
+    prevChapter = {
+      number: chapterNum - 1,
+      reference: `${book.name} ${chapterNum - 1}`,
+      verses: book.chapters[chapterNum - 2].length,
+      book: book.code,
+      bookName: book.name,
+    }
+  } else if (allBooks) {
+    // First chapter of book - try to get last chapter of previous book
+    const currentBookIndex = allBooks.findIndex((b) => b.code === book.code)
+    if (currentBookIndex > 0) {
+      const prevBook = allBooks[currentBookIndex - 1]
+      const lastChapterNum = prevBook.chapters.length
+      prevChapter = {
+        number: lastChapterNum,
+        reference: `${prevBook.name} ${lastChapterNum}`,
+        verses: prevBook.chapters[lastChapterNum - 1].length,
+        book: prevBook.code,
+        bookName: prevBook.name,
+      }
+    }
+  }
+
+  if (!isLastChapter) {
+    // Next chapter in same book
+    nextChapter = {
+      number: chapterNum + 1,
+      reference: `${book.name} ${chapterNum + 1}`,
+      verses: book.chapters[chapterNum].length,
+      book: book.code,
+      bookName: book.name,
+    }
+  } else if (allBooks) {
+    // Last chapter of book - try to get first chapter of next book
+    const currentBookIndex = allBooks.findIndex((b) => b.code === book.code)
+    if (currentBookIndex < allBooks.length - 1) {
+      const nextBook = allBooks[currentBookIndex + 1]
+      nextChapter = {
+        number: 1,
+        reference: `${nextBook.name} 1`,
+        verses: nextBook.chapters[0].length,
+        book: nextBook.code,
+        bookName: nextBook.name,
+      }
+    }
+  }
+
   return {
-    prevChapter: isFirstChapter
-      ? null
-      : {
-          number: chapterNum - 1,
-          reference: `${book.name} ${chapterNum - 1}`,
-          verses: book.chapters[chapterNum - 2].length,
-        },
-    nextChapter: isLastChapter
-      ? null
-      : {
-          number: chapterNum + 1,
-          reference: `${book.name} ${chapterNum + 1}`,
-          verses: book.chapters[chapterNum].length,
-        },
+    prevChapter,
+    nextChapter,
   }
 }
 
@@ -265,6 +309,7 @@ export function formatChapterResponse(
   book: Book,
   translationKey: string = 'nva',
   versesFilter?: { from?: string; to?: string },
+  allBooks?: Scripture,
 ) {
   const verses = versesFilter
     ? filterVersesByRange(chapter, versesFilter.from, versesFilter.to)
@@ -279,7 +324,7 @@ export function formatChapterResponse(
       totalVerses: chapter.length,
     },
     verses: verses.map(({ verse, text }) => formatSimpleVerse(text, verse)),
-    pagination: getChapterPagination(book, chapterNum),
+    pagination: getChapterPagination(book, chapterNum, allBooks),
   }
 }
 
