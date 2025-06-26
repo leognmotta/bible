@@ -1,103 +1,238 @@
-import Image from 'next/image'
+import ScriptureReader from '@/components/ScriptureReader'
+import { Skeleton } from '@/components/ui/skeleton'
 
-export default function Home() {
+interface Book {
+  name: string
+  displayName: string
+  chapters: number
+  aliases: string[]
+  abbreviations: string[]
+}
+
+interface Translation {
+  key: string
+  name: string
+  language: string
+}
+
+interface BookData {
+  code: string
+  name: string
+  summary: string
+  chapters: number
+}
+
+interface Chapter {
+  number: number
+  name: string
+  totalVerses: number
+}
+
+interface Verse {
+  verse: number
+  text: string
+}
+
+interface Pagination {
+  prevChapter?: {
+    number: number
+    reference: string
+    verses: number
+  } | null
+  nextChapter?: {
+    number: number
+    reference: string
+    verses: number
+  } | null
+}
+
+interface ChapterResponse {
+  translation: Translation
+  book: BookData
+  chapter: Chapter
+  verses: Verse[]
+  pagination: Pagination
+}
+
+interface PageProps {
+  searchParams: Promise<{
+    book?: string
+    chapter?: string
+  }>
+}
+
+async function getBooks(): Promise<Book[]> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/bible/nva/books`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch books')
+    }
+
+    const data = await response.json()
+    return data.books
+  } catch (error) {
+    console.error('Error fetching books:', error)
+    return []
+  }
+}
+
+async function getChapter(
+  book: string,
+  chapter: number,
+): Promise<ChapterResponse | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/bible/nva/${book}/${chapter}`,
+      {
+        next: { revalidate: 0 }, // Always fresh for chapters
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch chapter')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching chapter:', error)
+    return null
+  }
+}
+
+function LoadingSkeleton() {
   return (
-    <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-      <main className="row-start-2 flex flex-col items-center gap-[32px] sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-center font-[family-name:var(--font-geist-mono)] text-sm/6 sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{' '}
-            <code className="rounded bg-black/[.05] px-1 py-0.5 font-[family-name:var(--font-geist-mono)] font-semibold dark:bg-white/[.06]">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="bg-background min-h-screen-mobile">
+      {/* Header Skeleton */}
+      <div className="bg-background/95 sticky top-0 z-50 border-b backdrop-blur">
+        <div className="px-4 py-3 md:container md:mx-auto md:max-w-4xl md:px-8 md:py-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5 md:h-6 md:w-6" />
+              <Skeleton className="h-5 w-24 md:h-6 md:w-28" />
+            </div>
+            <Skeleton className="h-8 w-8 md:hidden" />
+          </div>
 
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-10 items-center justify-center gap-2 rounded-full border border-solid border-transparent px-4 text-sm font-medium transition-colors hover:bg-[#383838] sm:h-12 sm:w-auto sm:px-5 sm:text-base dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="flex h-10 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-4 text-sm font-medium transition-colors hover:border-transparent hover:bg-[#f2f2f2] sm:h-12 sm:w-auto sm:px-5 sm:text-base md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+              <Skeleton className="hidden h-8 md:block" />
+            </div>
+
+            <div className="flex gap-3 md:hidden">
+              <Skeleton className="h-12 flex-1" />
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-12 flex-1" />
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex flex-wrap items-center justify-center gap-[24px]">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Content Skeleton */}
+      <div className="px-4 pb-8 md:container md:mx-auto md:max-w-4xl md:px-8">
+        <div className="space-y-4 pt-4">
+          <Skeleton className="mx-auto h-6 w-3/4" />
+          <div className="space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton className="mt-1 h-4 w-6 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
+}
+
+export default async function HomePage(props: PageProps) {
+  // Await searchParams in Next.js 15
+  const searchParams = await props.searchParams
+
+  // Get query parameters
+  const bookParam = searchParams.book || 'genesis' // Default to Genesis
+  const chapterParam = searchParams.chapter || '1' // Default to chapter 1
+  const chapterNum = parseInt(chapterParam, 10) || 1
+
+  // Fetch data on the server with parallel requests
+  const [books, initialChapterData] = await Promise.all([
+    getBooks(),
+    getChapter(bookParam.toLowerCase(), chapterNum),
+  ])
+
+  return (
+    <ScriptureReader
+      books={books}
+      initialChapterData={initialChapterData}
+      initialBook={bookParam.toLowerCase()}
+      initialChapter={chapterNum}
+    />
+  )
+}
+
+// Generate metadata for SEO using new Next.js 15 patterns
+export async function generateMetadata(props: PageProps) {
+  const searchParams = await props.searchParams
+  const bookParam = searchParams.book || 'genesis'
+  const chapterParam = searchParams.chapter || '1'
+
+  try {
+    const chapterData = await getChapter(
+      bookParam.toLowerCase(),
+      parseInt(chapterParam, 10) || 1,
+    )
+
+    if (chapterData) {
+      return {
+        title: `${chapterData.chapter.name} - Bíblia NVA`,
+        description: `Leia ${chapterData.chapter.name} na Nova Versão de Acesso Livre. ${chapterData.book.summary.slice(0, 150)}...`,
+        openGraph: {
+          title: `${chapterData.chapter.name} - Bíblia NVA`,
+          description: `Leia ${chapterData.chapter.name} na Nova Versão de Acesso Livre.`,
+          type: 'article',
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: `${chapterData.chapter.name} - Bíblia NVA`,
+          description: `Leia ${chapterData.chapter.name} na Nova Versão de Acesso Livre.`,
+        },
+      }
+    }
+  } catch (error) {
+    console.error('Error generating metadata:', error)
+  }
+
+  return {
+    title: 'Bíblia NVA - Nova Versão de Acesso Livre',
+    description:
+      'Leia a Bíblia online na Nova Versão de Acesso Livre. Interface moderna e responsiva para leitura em qualquer dispositivo.',
+    openGraph: {
+      title: 'Bíblia NVA - Nova Versão de Acesso Livre',
+      description:
+        'Leia a Bíblia online na Nova Versão de Acesso Livre. Interface moderna e responsiva para leitura em qualquer dispositivo.',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Bíblia NVA - Nova Versão de Acesso Livre',
+      description:
+        'Leia a Bíblia online na Nova Versão de Acesso Livre. Interface moderna e responsiva para leitura em qualquer dispositivo.',
+    },
+  }
+}
+
+// Loading UI for the page
+export function loading() {
+  return <LoadingSkeleton />
 }
