@@ -1,5 +1,7 @@
 import { type Book, loadTranslation, type Scripture } from '@bible/translations'
 
+import { getBookNamePt } from '@/lib/utils/book-utils'
+
 import { normalizeBookName } from './book-abbreviations'
 import { bookSummaries } from './book-summaries'
 // Scripture map for converting codes to names
@@ -183,9 +185,10 @@ export function formatTranslationInfo(translationKey: string = 'nva') {
 
 // Utility: Format book info with summary
 export function formatBookData(book: Book) {
+  const portugueseName = getBookNamePt(book.code) || book.name
   return {
     code: book.code,
-    name: book.name,
+    name: portugueseName,
     summary: bookSummaries[book.code] || 'No summary available.',
     chapters: book.chapters.length,
   }
@@ -203,24 +206,26 @@ export function getVersePagination(
   const isFirstChapter = chapterNum === 1
   const isLastChapter = chapterNum === book.chapters.length
 
+  const portugueseName = getBookNamePt(book.code) || book.name
+
   return {
     prevVerse: isFirstVerse
       ? null
       : {
           number: verseNum - 1,
-          reference: `${book.name} ${chapterNum}:${verseNum - 1}`,
+          reference: `${portugueseName} ${chapterNum}:${verseNum - 1}`,
         },
     nextVerse: isLastVerse
       ? null
       : {
           number: verseNum + 1,
-          reference: `${book.name} ${chapterNum}:${verseNum + 1}`,
+          reference: `${portugueseName} ${chapterNum}:${verseNum + 1}`,
         },
     prevChapter:
       isFirstVerse && !isFirstChapter
         ? {
             number: chapterNum - 1,
-            reference: `${book.name} ${chapterNum - 1}`,
+            reference: `${portugueseName} ${chapterNum - 1}`,
             lastVerse: book.chapters[chapterNum - 2].length,
           }
         : null,
@@ -228,7 +233,7 @@ export function getVersePagination(
       isLastVerse && !isLastChapter
         ? {
             number: chapterNum + 1,
-            reference: `${book.name} ${chapterNum + 1}`,
+            reference: `${portugueseName} ${chapterNum + 1}`,
             firstVerse: 1,
           }
         : null,
@@ -247,27 +252,31 @@ export function getChapterPagination(
   let prevChapter = null
   let nextChapter = null
 
+  const portugueseName = getBookNamePt(book.code) || book.name
+
   if (!isFirstChapter) {
     // Previous chapter in same book
     prevChapter = {
       number: chapterNum - 1,
-      reference: `${book.name} ${chapterNum - 1}`,
+      reference: `${portugueseName} ${chapterNum - 1}`,
       verses: book.chapters[chapterNum - 2].length,
       book: book.code,
-      bookName: book.name,
+      bookName: portugueseName,
     }
   } else if (allBooks) {
     // First chapter of book - try to get last chapter of previous book
     const currentBookIndex = allBooks.findIndex((b) => b.code === book.code)
     if (currentBookIndex > 0) {
       const prevBook = allBooks[currentBookIndex - 1]
+      const prevBookPortugueseName =
+        getBookNamePt(prevBook.code) || prevBook.name
       const lastChapterNum = prevBook.chapters.length
       prevChapter = {
         number: lastChapterNum,
-        reference: `${prevBook.name} ${lastChapterNum}`,
+        reference: `${prevBookPortugueseName} ${lastChapterNum}`,
         verses: prevBook.chapters[lastChapterNum - 1].length,
         book: prevBook.code,
-        bookName: prevBook.name,
+        bookName: prevBookPortugueseName,
       }
     }
   }
@@ -276,22 +285,24 @@ export function getChapterPagination(
     // Next chapter in same book
     nextChapter = {
       number: chapterNum + 1,
-      reference: `${book.name} ${chapterNum + 1}`,
+      reference: `${portugueseName} ${chapterNum + 1}`,
       verses: book.chapters[chapterNum].length,
       book: book.code,
-      bookName: book.name,
+      bookName: portugueseName,
     }
   } else if (allBooks) {
     // Last chapter of book - try to get first chapter of next book
     const currentBookIndex = allBooks.findIndex((b) => b.code === book.code)
     if (currentBookIndex < allBooks.length - 1) {
       const nextBook = allBooks[currentBookIndex + 1]
+      const nextBookPortugueseName =
+        getBookNamePt(nextBook.code) || nextBook.name
       nextChapter = {
         number: 1,
-        reference: `${nextBook.name} 1`,
+        reference: `${nextBookPortugueseName} 1`,
         verses: nextBook.chapters[0].length,
         book: nextBook.code,
-        bookName: nextBook.name,
+        bookName: nextBookPortugueseName,
       }
     }
   }
@@ -315,12 +326,14 @@ export function formatChapterResponse(
     ? filterVersesByRange(chapter, versesFilter.from, versesFilter.to)
     : chapter.map((text, index) => ({ verse: index + 1, text }))
 
+  const portugueseName = getBookNamePt(book.code) || book.name
+
   return {
     translation: formatTranslationInfo(translationKey),
     book: formatBookData(book),
     chapter: {
       number: chapterNum,
-      name: `${book.name} ${chapterNum}`,
+      name: `${portugueseName} ${chapterNum}`,
       totalVerses: chapter.length,
     },
     verses: verses.map(({ verse, text }) => formatSimpleVerse(text, verse)),
@@ -336,17 +349,19 @@ export function formatVerseResponse(
   book: Book,
   translationKey: string = 'nva',
 ) {
+  const portugueseName = getBookNamePt(book.code) || book.name
+
   return {
     translation: formatTranslationInfo(translationKey),
     book: formatBookData(book),
     chapter: {
       number: chapterNum,
-      name: `${book.name} ${chapterNum}`,
+      name: `${portugueseName} ${chapterNum}`,
     },
     verse: {
       number: verseNum,
       text: verseText,
-      reference: `${book.name} ${chapterNum}:${verseNum}`,
+      reference: `${portugueseName} ${chapterNum}:${verseNum}`,
     },
     pagination: getVersePagination(book, chapterNum, verseNum),
   }
@@ -354,13 +369,15 @@ export function formatVerseResponse(
 
 // Utility: Format book info
 export function formatBookInfo(book: Book, translationKey: string = 'nva') {
+  const portugueseName = getBookNamePt(book.code) || book.name
+
   return {
     translation: translationKey,
-    name: book.name,
-    displayName: book.name,
+    name: portugueseName,
+    displayName: portugueseName,
     chapters: book.chapters.map((chapter, index) => ({
       chapter: index + 1,
-      name: `${book.name} ${index + 1}`,
+      name: `${portugueseName} ${index + 1}`,
       verses: chapter.length,
     })),
     totalChapters: book.chapters.length,
