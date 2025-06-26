@@ -1,13 +1,19 @@
-import { Translation } from './types'
+import { Scripture } from './types'
 
 export const availableTranslations = ['nva'] as const
 
-export const loadTranslation = async (key: string): Promise<Translation> => {
-  const translation = await import(`./translations/${key}.json`)
+export const loadTranslation = async (code: string) => {
+  try {
+    const lowerCode = code.toLowerCase()
+    const translation = await import(`./translations/${lowerCode}.json`)
 
-  if (!translation.default) {
-    throw new Error(`Translation '${key}' not found`)
+    if (!translation.default) {
+      return null
+    }
+
+    return translation.default as Scripture
+  } catch (error) {
+    console.error(error)
+    return null
   }
-
-  return translation.default as Translation
 }

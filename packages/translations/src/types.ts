@@ -1,21 +1,11 @@
-export interface Verse {
-  verse: number
-  chapter: number
-  name: string
-  text: string
-}
+export type Verse = string
 
-export interface Chapter {
-  chapter: number
-  name: string
-  verses: Verse[]
-}
+export type Chapter = Verse[]
 
-export interface Book {
+export type Book = {
+  code: string
+  name: string
   chapters: Chapter[]
-  name: string
 }
 
-export interface Translation {
-  books: Book[]
-}
+export type Scripture = Book[]
