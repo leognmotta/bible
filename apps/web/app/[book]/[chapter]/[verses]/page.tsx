@@ -70,31 +70,62 @@ async function getChapter(
   }
 }
 
-function parseVerseRange(
-  versesParam: string,
-): { from: number; to: number } | null {
-  // Support formats: "5", "5-7", "5-5" (single verse)
-  const match = versesParam.match(/^(\d+)(?:-(\d+))?$/)
-  if (!match) return null
+function parseVerseRange(versesParam: string): { verses: number[] } | null {
+  // Support formats: "5", "5-7" (includes all verses from 5 to 7), "5,7,9", "5-7,10,12-14"
 
-  const from = parseInt(match[1], 10)
-  const to = match[2] ? parseInt(match[2], 10) : from
+  // Split by comma first
+  const parts = versesParam.split(',')
+  const allVerses: number[] = []
 
-  if (from < 1 || to < from) return null
+  for (const part of parts) {
+    const trimmed = part.trim()
 
-  return { from, to }
+    // Check if it's a range (e.g., "5-7")
+    const rangeMatch = trimmed.match(/^(\d+)-(\d+)$/)
+    if (rangeMatch) {
+      const from = parseInt(rangeMatch[1], 10)
+      const to = parseInt(rangeMatch[2], 10)
+
+      if (from < 1 || to < from) return null
+
+      // For ranges, include ALL verses from 'from' to 'to'
+      // This means if URL is /gn/1/1-35, it shows verses 1 through 35
+      // even if user only selected verses 1,2,3,4,5,6,7,8,9,10,11,13,14,15...33,34,35
+      for (let i = from; i <= to; i++) {
+        allVerses.push(i)
+      }
+    } else {
+      // Single verse
+      const singleMatch = trimmed.match(/^\d+$/)
+      if (!singleMatch) return null
+
+      const verse = parseInt(trimmed, 10)
+      if (verse < 1) return null
+
+      allVerses.push(verse)
+    }
+  }
+
+  if (allVerses.length === 0) return null
+
+  // Remove duplicates and sort
+  const uniqueVerses = Array.from(new Set(allVerses)).sort((a, b) => a - b)
+
+  return { verses: uniqueVerses }
 }
 
 function formatVerseReference(
   bookName: string,
   chapter: number,
-  from: number,
-  to: number,
+  verses: number[],
 ): string {
-  if (from === to) {
-    return `${bookName} ${chapter}:${from}`
+  if (verses.length === 1) {
+    return `${bookName} ${chapter}:${verses[0]}`
   }
-  return `${bookName} ${chapter}:${from}-${to}`
+
+  // Always show as range from first to last verse
+  // This matches the URL format and is cleaner for display
+  return `${bookName} ${chapter}:${verses[0]}-${verses[verses.length - 1]}`
 }
 
 export default async function VersePage(props: PageProps) {
@@ -139,9 +170,9 @@ export default async function VersePage(props: PageProps) {
     notFound()
   }
 
-  // Filter verses based on range
-  const selectedVerses = chapterData.verses.filter(
-    (verse) => verse.verse >= verseRange.from && verse.verse <= verseRange.to,
+  // Filter verses based on selected verse numbers
+  const selectedVerses = chapterData.verses.filter((verse) =>
+    verseRange.verses.includes(verse.verse),
   )
 
   // Validate verse range exists
@@ -152,8 +183,7 @@ export default async function VersePage(props: PageProps) {
   const verseReference = formatVerseReference(
     chapterData.book.name,
     chapterNum,
-    verseRange.from,
-    verseRange.to,
+    verseRange.verses,
   )
 
   const shareUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${bookCode}/${chapter}/${verses}`
@@ -200,17 +230,15 @@ export async function generateMetadata(props: PageProps) {
     const chapterData = await getChapter(bookName.toLowerCase(), chapterNum)
 
     if (chapterData) {
-      const selectedVerses = chapterData.verses.filter(
-        (verse) =>
-          verse.verse >= verseRange.from && verse.verse <= verseRange.to,
+      const selectedVerses = chapterData.verses.filter((verse) =>
+        verseRange.verses.includes(verse.verse),
       )
 
       if (selectedVerses.length > 0) {
         const verseReference = formatVerseReference(
           chapterData.book.name,
           chapterNum,
-          verseRange.from,
-          verseRange.to,
+          verseRange.verses,
         )
 
         const verseText = selectedVerses.map((v) => v.text).join(' ')

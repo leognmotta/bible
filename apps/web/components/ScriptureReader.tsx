@@ -5,8 +5,10 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Menu,
   Share2,
+  X,
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -107,6 +109,8 @@ export default function ScriptureReader({
   )
   const [loading, setLoading] = useState(false)
   const [showControls, setShowControls] = useState(true)
+  const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set())
+  const [showShareButton, setShowShareButton] = useState(false)
 
   // Handle viewport changes for mobile browsers
   useEffect(() => {
@@ -160,6 +164,8 @@ export default function ScriptureReader({
       }
       const data = await response.json()
       setChapterData(data)
+      // Clear verse selection when changing chapters
+      clearSelection()
     } catch (error) {
       console.error('Error loading chapter:', error)
     } finally {
@@ -266,6 +272,50 @@ export default function ScriptureReader({
     if (!currentBook) return []
 
     return Array.from({ length: currentBook.chapters }, (_, i) => i + 1)
+  }
+
+  // Verse selection functions
+  const toggleVerseSelection = (verseNumber: number) => {
+    const newSelected = new Set(selectedVerses)
+    if (newSelected.has(verseNumber)) {
+      newSelected.delete(verseNumber)
+    } else {
+      newSelected.add(verseNumber)
+    }
+    setSelectedVerses(newSelected)
+    setShowShareButton(newSelected.size > 0)
+  }
+
+  const clearSelection = () => {
+    setSelectedVerses(new Set())
+    setShowShareButton(false)
+  }
+
+  const getShareUrl = () => {
+    if (selectedVerses.size === 0) return ''
+
+    const sortedVerses = Array.from(selectedVerses).sort((a, b) => a - b)
+    let versesParam = ''
+
+    if (sortedVerses.length === 1) {
+      versesParam = sortedVerses[0].toString()
+    } else {
+      // Always use range format: from smallest to largest verse
+      versesParam = `${sortedVerses[0]}-${sortedVerses[sortedVerses.length - 1]}`
+    }
+
+    return `${window.location.origin}/${selectedBook}/${selectedChapter}/${versesParam}`
+  }
+
+  const copyShareUrl = async () => {
+    const url = getShareUrl()
+    try {
+      await navigator.clipboard.writeText(url)
+      // You could add a toast notification here
+      console.log('URL copied to clipboard:', url)
+    } catch (error) {
+      console.error('Failed to copy URL:', error)
+    }
   }
 
   return (
@@ -468,49 +518,78 @@ export default function ScriptureReader({
               </CardContent>
             </Card>
 
-            {/* Verses - Optimized for mobile reading */}
-            <div className="space-y-4 pb-4 md:space-y-6">
-              {chapterData.verses.map((verse) => (
-                <div
-                  key={verse.verse}
-                  className="group flex gap-3 leading-relaxed md:gap-4"
-                >
-                  <span className="text-primary mt-0.5 min-w-[1.5rem] flex-shrink-0 text-sm font-semibold md:min-w-[2rem] md:text-base">
-                    {verse.verse}
+            {/* Share Button - Fixed position when verses are selected */}
+            {showShareButton && (
+              <div className="fixed right-4 bottom-4 z-50 md:right-8 md:bottom-8">
+                <div className="bg-primary text-primary-foreground flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg">
+                  <span className="text-sm font-medium">
+                    {selectedVerses.size === 1
+                      ? `Versículo ${Array.from(selectedVerses)[0]}`
+                      : `Versículos ${Math.min(...selectedVerses)}-${Math.max(...selectedVerses)}`}
                   </span>
-                  <div className="flex-1">
-                    <p className="text-foreground text-base leading-7 md:text-lg md:leading-8">
-                      {verse.text}
-                    </p>
-                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-1 h-6 w-6 flex-shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => {
-                      if (useUrlParams && chapterData) {
-                        const shareUrl = `${window.location.origin}/${selectedBook}/${selectedChapter}/${verse.verse}`
-                        if (navigator.share) {
-                          navigator
-                            .share({
-                              title: `${chapterData.book.name} ${selectedChapter}:${verse.verse}`,
-                              text: verse.text,
-                              url: shareUrl,
-                            })
-                            .catch(() => {
-                              // Fallback to clipboard if share fails
-                              navigator.clipboard.writeText(shareUrl)
-                            })
-                        } else {
-                          navigator.clipboard.writeText(shareUrl)
-                        }
-                      }
-                    }}
+                    className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8 p-0"
+                    onClick={copyShareUrl}
                   >
-                    <Share2 className="h-3 w-3" />
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8 p-0"
+                    onClick={clearSelection}
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Verses - Optimized for mobile reading with selection */}
+            <div className="space-y-4 pb-4 md:space-y-6">
+              {chapterData.verses.map((verse) => {
+                const isSelected = selectedVerses.has(verse.verse)
+                return (
+                  <div
+                    key={verse.verse}
+                    className={`group flex cursor-pointer gap-3 rounded-lg p-2 leading-relaxed transition-colors md:gap-4 ${
+                      isSelected
+                        ? 'bg-primary/10 border-primary/20 border'
+                        : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => toggleVerseSelection(verse.verse)}
+                  >
+                    <span
+                      className={`mt-0.5 min-w-[1.5rem] flex-shrink-0 text-sm font-semibold md:min-w-[2rem] md:text-base ${
+                        isSelected ? 'text-primary' : 'text-primary'
+                      }`}
+                    >
+                      {verse.verse}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-foreground text-base leading-7 md:text-lg md:leading-8">
+                        {verse.text}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-6 w-6 flex-shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (useUrlParams && chapterData) {
+                          const shareUrl = `${window.location.origin}/${selectedBook}/${selectedChapter}/${verse.verse}`
+                          navigator.clipboard.writeText(shareUrl)
+                        }
+                      }}
+                    >
+                      <Share2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )
+              })}
             </div>
           </div>
         ) : (
