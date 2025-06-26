@@ -1,6 +1,13 @@
 'use client'
 
-import { Book, Bookmark, ChevronLeft, ChevronRight, Menu } from 'lucide-react'
+import {
+  Book,
+  Bookmark,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  Share2,
+} from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -15,8 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getBookNamePt } from '@/lib/utils/book-utils'
 
 interface Book {
+  code: string
   name: string
   displayName: string
   chapters: number
@@ -78,6 +87,7 @@ interface ScriptureReaderProps {
   initialChapterData?: ChapterResponse | null
   initialBook?: string
   initialChapter?: number
+  useUrlParams?: boolean
 }
 
 export default function ScriptureReader({
@@ -85,6 +95,7 @@ export default function ScriptureReader({
   initialChapterData,
   initialBook = '',
   initialChapter = 1,
+  useUrlParams = false,
 }: ScriptureReaderProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -124,14 +135,24 @@ export default function ScriptureReader({
     }
   }, [books, selectedBook])
 
-  const loadChapter = async (book: string, chapter: number) => {
+  const loadChapter = async (
+    book: string,
+    chapter: number,
+    bookCodeForUrl?: string,
+  ) => {
     setLoading(true)
     try {
-      // Update URL first for better UX
-      const params = new URLSearchParams(searchParams)
-      params.set('book', book)
-      params.set('chapter', chapter.toString())
-      router.push(`/?${params.toString()}`, { scroll: false })
+      // Update URL based on routing strategy
+      if (useUrlParams) {
+        // For URL params, we need to use the book code, not the English name
+        const bookForUrl = bookCodeForUrl || selectedBook || book
+        router.push(`/${bookForUrl}/${chapter}`, { scroll: false })
+      } else {
+        const params = new URLSearchParams(searchParams)
+        params.set('book', book)
+        params.set('chapter', chapter.toString())
+        router.push(`/?${params.toString()}`, { scroll: false })
+      }
 
       const response = await fetch(`/api/bible/nva/${book}/${chapter}`)
       if (!response.ok) {
@@ -146,17 +167,25 @@ export default function ScriptureReader({
     }
   }
 
-  const handleBookChange = (bookName: string) => {
-    setSelectedBook(bookName.toLowerCase())
+  const handleBookChange = (bookCode: string) => {
+    setSelectedBook(bookCode)
     setSelectedChapter(1) // Reset to first chapter
-    loadChapter(bookName.toLowerCase(), 1)
+    // Find the book to get the English name for API call
+    const book = books.find((b) => b.code === bookCode)
+    if (book) {
+      loadChapter(book.name.toLowerCase(), 1, bookCode)
+    }
   }
 
   const handleChapterChange = (chapter: string) => {
     const chapterNum = parseInt(chapter)
     setSelectedChapter(chapterNum)
     if (selectedBook) {
-      loadChapter(selectedBook, chapterNum)
+      // Find the book to get the English name for API call
+      const book = books.find((b) => b.code === selectedBook)
+      if (book) {
+        loadChapter(book.name.toLowerCase(), chapterNum, selectedBook)
+      }
     }
   }
 
@@ -165,24 +194,30 @@ export default function ScriptureReader({
       const prevChapter = chapterData.pagination.prevChapter
       const newChapter = prevChapter.number
 
+      // Update state first
+      setSelectedChapter(newChapter)
+
       // Check if we're switching books
       if (prevChapter.book && prevChapter.book !== chapterData.book.code) {
-        // Find the book name by code to update selectedBook
-        const targetBook = books.find((book) =>
-          book.name
-            .toLowerCase()
-            .includes(prevChapter.bookName?.toLowerCase() || ''),
-        )
+        // Update selectedBook with the book code
+        setSelectedBook(prevChapter.book)
+        // Find the book to get the English name for API call
+        const targetBook = books.find((b) => b.code === prevChapter.book)
         if (targetBook) {
-          setSelectedBook(targetBook.name.toLowerCase())
+          loadChapter(
+            targetBook.name.toLowerCase(),
+            newChapter,
+            prevChapter.book,
+          )
+        }
+      } else {
+        // Same book - use current selectedBook
+        const currentBook = books.find((b) => b.code === selectedBook)
+        if (currentBook) {
+          loadChapter(currentBook.name.toLowerCase(), newChapter, selectedBook)
         }
       }
 
-      setSelectedChapter(newChapter)
-      loadChapter(
-        prevChapter.bookName?.toLowerCase() || selectedBook,
-        newChapter,
-      )
       // Scroll to top on mobile
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -193,31 +228,37 @@ export default function ScriptureReader({
       const nextChapter = chapterData.pagination.nextChapter
       const newChapter = nextChapter.number
 
+      // Update state first
+      setSelectedChapter(newChapter)
+
       // Check if we're switching books
       if (nextChapter.book && nextChapter.book !== chapterData.book.code) {
-        // Find the book name by code to update selectedBook
-        const targetBook = books.find((book) =>
-          book.name
-            .toLowerCase()
-            .includes(nextChapter.bookName?.toLowerCase() || ''),
-        )
+        // Update selectedBook with the book code
+        setSelectedBook(nextChapter.book)
+        // Find the book to get the English name for API call
+        const targetBook = books.find((b) => b.code === nextChapter.book)
         if (targetBook) {
-          setSelectedBook(targetBook.name.toLowerCase())
+          loadChapter(
+            targetBook.name.toLowerCase(),
+            newChapter,
+            nextChapter.book,
+          )
+        }
+      } else {
+        // Same book - use current selectedBook
+        const currentBook = books.find((b) => b.code === selectedBook)
+        if (currentBook) {
+          loadChapter(currentBook.name.toLowerCase(), newChapter, selectedBook)
         }
       }
 
-      setSelectedChapter(newChapter)
-      loadChapter(
-        nextChapter.bookName?.toLowerCase() || selectedBook,
-        newChapter,
-      )
       // Scroll to top on mobile
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
   const getCurrentBook = () => {
-    return books.find((book) => book.name.toLowerCase() === selectedBook)
+    return books.find((book) => book.code === selectedBook)
   }
 
   const getChapterOptions = () => {
@@ -258,7 +299,7 @@ export default function ScriptureReader({
                 </SelectTrigger>
                 <SelectContent>
                   {books.map((book) => (
-                    <SelectItem key={book.name} value={book.name.toLowerCase()}>
+                    <SelectItem key={book.code} value={book.code}>
                       {book.displayName}
                     </SelectItem>
                   ))}
@@ -304,7 +345,8 @@ export default function ScriptureReader({
                 {chapterData?.pagination.prevChapter?.book &&
                 chapterData.pagination.prevChapter.book !==
                   chapterData.book.code
-                  ? chapterData?.pagination.prevChapter?.bookName || 'Anterior'
+                  ? getBookNamePt(chapterData.pagination.prevChapter.book) ||
+                    'Anterior'
                   : 'Anterior'}
               </Button>
 
@@ -326,7 +368,8 @@ export default function ScriptureReader({
                 {chapterData?.pagination.nextChapter?.book &&
                 chapterData.pagination.nextChapter.book !==
                   chapterData.book.code
-                  ? chapterData?.pagination.nextChapter?.bookName || 'Próximo'
+                  ? getBookNamePt(chapterData.pagination.nextChapter.book) ||
+                    'Próximo'
                   : 'Próximo'}
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
@@ -345,7 +388,7 @@ export default function ScriptureReader({
                   ? chapterData.pagination.prevChapter.book &&
                     chapterData.pagination.prevChapter.book !==
                       chapterData.book.code
-                    ? `${chapterData.pagination.prevChapter.bookName} ${chapterData.pagination.prevChapter.number}`
+                    ? `${getBookNamePt(chapterData.pagination.prevChapter.book)} ${chapterData.pagination.prevChapter.number}`
                     : `Capítulo ${chapterData.pagination.prevChapter.number}`
                   : 'Capítulo Anterior'}
               </Button>
@@ -369,7 +412,7 @@ export default function ScriptureReader({
                   ? chapterData.pagination.nextChapter.book &&
                     chapterData.pagination.nextChapter.book !==
                       chapterData.book.code
-                    ? `${chapterData.pagination.nextChapter.bookName} ${chapterData.pagination.nextChapter.number}`
+                    ? `${getBookNamePt(chapterData.pagination.nextChapter.book)} ${chapterData.pagination.nextChapter.number}`
                     : `Capítulo ${chapterData.pagination.nextChapter.number}`
                   : 'Próximo Capítulo'}
                 <ChevronRight className="h-4 w-4" />
@@ -430,14 +473,42 @@ export default function ScriptureReader({
               {chapterData.verses.map((verse) => (
                 <div
                   key={verse.verse}
-                  className="flex gap-3 leading-relaxed md:gap-4"
+                  className="group flex gap-3 leading-relaxed md:gap-4"
                 >
                   <span className="text-primary mt-0.5 min-w-[1.5rem] flex-shrink-0 text-sm font-semibold md:min-w-[2rem] md:text-base">
                     {verse.verse}
                   </span>
-                  <p className="text-foreground flex-1 text-base leading-7 md:text-lg md:leading-8">
-                    {verse.text}
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-foreground text-base leading-7 md:text-lg md:leading-8">
+                      {verse.text}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-6 w-6 flex-shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => {
+                      if (useUrlParams && chapterData) {
+                        const shareUrl = `${window.location.origin}/${selectedBook}/${selectedChapter}/${verse.verse}`
+                        if (navigator.share) {
+                          navigator
+                            .share({
+                              title: `${chapterData.book.name} ${selectedChapter}:${verse.verse}`,
+                              text: verse.text,
+                              url: shareUrl,
+                            })
+                            .catch(() => {
+                              // Fallback to clipboard if share fails
+                              navigator.clipboard.writeText(shareUrl)
+                            })
+                        } else {
+                          navigator.clipboard.writeText(shareUrl)
+                        }
+                      }
+                    }}
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </div>
