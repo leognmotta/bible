@@ -120,3 +120,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile viewport fixes for Chrome */
+@layer utilities {
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Fix for Chrome mobile dynamic viewport */
+  .min-h-screen-mobile {
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100); /* Fallback for older browsers */
+    min-height: 100dvh; /* Dynamic viewport height */
+  }
+  
+  /* Prevent layout shift on scroll */
+  .fixed-bottom-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: translateZ(0); /* Force hardware acceleration */
+    backface-visibility: hidden;
+  }
+  
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Prevent overscroll bounce on mobile */
+  body {
+    overscroll-behavior: none;
+  }
+}
