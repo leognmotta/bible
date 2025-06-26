@@ -216,6 +216,7 @@ app.get('/bible/:translation/:book/:chapter', async (c) => {
       bookData,
       translation,
       from || to ? { from, to } : undefined,
+      bibleData, // Pass all books for cross-book navigation
     )
 
     return c.json(formattedChapter)
