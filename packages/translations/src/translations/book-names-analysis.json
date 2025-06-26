@@ -1,0 +1,476 @@
+{
+  "totalUniqueBooks": 66,
+  "allBookNames": [
+    "Acts",
+    "Amos",
+    "Colossians",
+    "Daniel",
+    "Deuteronomy",
+    "Ecclesiastes",
+    "Ephesians",
+    "Esther",
+    "Exodus",
+    "Ezekiel",
+    "Ezra",
+    "Galatians",
+    "Genesis",
+    "Habakkuk",
+    "Haggai",
+    "Hebrews",
+    "Hosea",
+    "I Chronicles",
+    "I Corinthians",
+    "I John",
+    "I Kings",
+    "I Peter",
+    "I Samuel",
+    "I Thessalonians",
+    "I Timothy",
+    "II Chronicles",
+    "II Corinthians",
+    "II John",
+    "II Kings",
+    "II Peter",
+    "II Samuel",
+    "II Thessalonians",
+    "II Timothy",
+    "III John",
+    "Isaiah",
+    "James",
+    "Jeremiah",
+    "Job",
+    "Joel",
+    "John",
+    "Jonah",
+    "Joshua",
+    "Jude",
+    "Judges",
+    "Lamentations",
+    "Leviticus",
+    "Luke",
+    "Malachi",
+    "Mark",
+    "Matthew",
+    "Micah",
+    "Nahum",
+    "Nehemiah",
+    "Numbers",
+    "Obadiah",
+    "Philemon",
+    "Philippians",
+    "Proverbs",
+    "Psalms",
+    "Revelation of John",
+    "Romans",
+    "Ruth",
+    "Song of Solomon",
+    "Titus",
+    "Zechariah",
+    "Zephaniah"
+  ],
+  "fileBreakdown": {
+    "nva.json": [
+      "Genesis",
+      "Exodus",
+      "Leviticus",
+      "Numbers",
+      "Deuteronomy",
+      "Joshua",
+      "Judges",
+      "Ruth",
+      "I Samuel",
+      "II Samuel",
+      "I Kings",
+      "II Kings",
+      "I Chronicles",
+      "II Chronicles",
+      "Ezra",
+      "Nehemiah",
+      "Esther",
+      "Job",
+      "Psalms",
+      "Proverbs",
+      "Ecclesiastes",
+      "Song of Solomon",
+      "Isaiah",
+      "Jeremiah",
+      "Lamentations",
+      "Ezekiel",
+      "Daniel",
+      "Hosea",
+      "Joel",
+      "Amos",
+      "Obadiah",
+      "Jonah",
+      "Micah",
+      "Nahum",
+      "Habakkuk",
+      "Zephaniah",
+      "Haggai",
+      "Zechariah",
+      "Malachi",
+      "Matthew",
+      "Mark",
+      "Luke",
+      "John",
+      "Acts",
+      "Romans",
+      "I Corinthians",
+      "II Corinthians",
+      "Galatians",
+      "Ephesians",
+      "Philippians",
+      "Colossians",
+      "I Thessalonians",
+      "II Thessalonians",
+      "I Timothy",
+      "II Timothy",
+      "Titus",
+      "Philemon",
+      "Hebrews",
+      "James",
+      "I Peter",
+      "II Peter",
+      "I John",
+      "II John",
+      "III John",
+      "Jude",
+      "Revelation of John"
+    ]
+  },
+  "scriptureMapComparison": {
+    "available": 66,
+    "scriptureMapEnglish": [
+      {
+        "code": "gn",
+        "english": "Genesis",
+        "portuguese": "Gênesis"
+      },
+      {
+        "code": "ex",
+        "english": "Exodus",
+        "portuguese": "Êxodo"
+      },
+      {
+        "code": "lv",
+        "english": "Leviticus",
+        "portuguese": "Levítico"
+      },
+      {
+        "code": "nm",
+        "english": "Numbers",
+        "portuguese": "Números"
+      },
+      {
+        "code": "dt",
+        "english": "Deuteronomy",
+        "portuguese": "Deuteronômio"
+      },
+      {
+        "code": "js",
+        "english": "Joshua",
+        "portuguese": "Josué"
+      },
+      {
+        "code": "jz",
+        "english": "Judges",
+        "portuguese": "Juízes"
+      },
+      {
+        "code": "rt",
+        "english": "Ruth",
+        "portuguese": "Rute"
+      },
+      {
+        "code": "1sm",
+        "english": "1 Samuel",
+        "portuguese": "1 Samuel"
+      },
+      {
+        "code": "2sm",
+        "english": "2 Samuel",
+        "portuguese": "2 Samuel"
+      },
+      {
+        "code": "1rs",
+        "english": "1 Kings",
+        "portuguese": "1 Reis"
+      },
+      {
+        "code": "2rs",
+        "english": "2 Kings",
+        "portuguese": "2 Reis"
+      },
+      {
+        "code": "1cr",
+        "english": "1 Chronicles",
+        "portuguese": "1 Crônicas"
+      },
+      {
+        "code": "2cr",
+        "english": "2 Chronicles",
+        "portuguese": "2 Crônicas"
+      },
+      {
+        "code": "ed",
+        "english": "Ezra",
+        "portuguese": "Esdras"
+      },
+      {
+        "code": "ne",
+        "english": "Nehemiah",
+        "portuguese": "Neemias"
+      },
+      {
+        "code": "et",
+        "english": "Esther",
+        "portuguese": "Ester"
+      },
+      {
+        "code": "jb",
+        "english": "Job",
+        "portuguese": "Jó"
+      },
+      {
+        "code": "sl",
+        "english": "Psalms",
+        "portuguese": "Salmos"
+      },
+      {
+        "code": "pv",
+        "english": "Proverbs",
+        "portuguese": "Provérbios"
+      },
+      {
+        "code": "ec",
+        "english": "Ecclesiastes",
+        "portuguese": "Eclesiastes"
+      },
+      {
+        "code": "ct",
+        "english": "Song of Solomon",
+        "portuguese": "Cânticos"
+      },
+      {
+        "code": "is",
+        "english": "Isaiah",
+        "portuguese": "Isaías"
+      },
+      {
+        "code": "jr",
+        "english": "Jeremiah",
+        "portuguese": "Jeremias"
+      },
+      {
+        "code": "lm",
+        "english": "Lamentations",
+        "portuguese": "Lamentações"
+      },
+      {
+        "code": "ez",
+        "english": "Ezekiel",
+        "portuguese": "Ezequiel"
+      },
+      {
+        "code": "dn",
+        "english": "Daniel",
+        "portuguese": "Daniel"
+      },
+      {
+        "code": "os",
+        "english": "Hosea",
+        "portuguese": "Oséias"
+      },
+      {
+        "code": "jl",
+        "english": "Joel",
+        "portuguese": "Joel"
+      },
+      {
+        "code": "am",
+        "english": "Amos",
+        "portuguese": "Amós"
+      },
+      {
+        "code": "ob",
+        "english": "Obadiah",
+        "portuguese": "Obadias"
+      },
+      {
+        "code": "jn",
+        "english": "Jonah",
+        "portuguese": "Jonas"
+      },
+      {
+        "code": "mq",
+        "english": "Micah",
+        "portuguese": "Miquéias"
+      },
+      {
+        "code": "na",
+        "english": "Nahum",
+        "portuguese": "Naum"
+      },
+      {
+        "code": "hc",
+        "english": "Habakkuk",
+        "portuguese": "Habacuque"
+      },
+      {
+        "code": "sf",
+        "english": "Zephaniah",
+        "portuguese": "Sofonias"
+      },
+      {
+        "code": "ag",
+        "english": "Haggai",
+        "portuguese": "Ageu"
+      },
+      {
+        "code": "zc",
+        "english": "Zechariah",
+        "portuguese": "Zacarias"
+      },
+      {
+        "code": "ml",
+        "english": "Malachi",
+        "portuguese": "Malaquias"
+      },
+      {
+        "code": "mt",
+        "english": "Matthew",
+        "portuguese": "Mateus"
+      },
+      {
+        "code": "mc",
+        "english": "Mark",
+        "portuguese": "Marcos"
+      },
+      {
+        "code": "lc",
+        "english": "Luke",
+        "portuguese": "Lucas"
+      },
+      {
+        "code": "jo",
+        "english": "John",
+        "portuguese": "João"
+      },
+      {
+        "code": "at",
+        "english": "Acts",
+        "portuguese": "Atos"
+      },
+      {
+        "code": "rm",
+        "english": "Romans",
+        "portuguese": "Romanos"
+      },
+      {
+        "code": "1co",
+        "english": "1 Corinthians",
+        "portuguese": "1 Coríntios"
+      },
+      {
+        "code": "2co",
+        "english": "2 Corinthians",
+        "portuguese": "2 Coríntios"
+      },
+      {
+        "code": "gl",
+        "english": "Galatians",
+        "portuguese": "Gálatas"
+      },
+      {
+        "code": "ef",
+        "english": "Ephesians",
+        "portuguese": "Efésios"
+      },
+      {
+        "code": "fp",
+        "english": "Philippians",
+        "portuguese": "Filipenses"
+      },
+      {
+        "code": "cl",
+        "english": "Colossians",
+        "portuguese": "Colossenses"
+      },
+      {
+        "code": "1ts",
+        "english": "1 Thessalonians",
+        "portuguese": "1 Tessalonicenses"
+      },
+      {
+        "code": "2ts",
+        "english": "2 Thessalonians",
+        "portuguese": "2 Tessalonicenses"
+      },
+      {
+        "code": "1tm",
+        "english": "1 Timothy",
+        "portuguese": "1 Timóteo"
+      },
+      {
+        "code": "2tm",
+        "english": "2 Timothy",
+        "portuguese": "2 Timóteo"
+      },
+      {
+        "code": "tt",
+        "english": "Titus",
+        "portuguese": "Tito"
+      },
+      {
+        "code": "fm",
+        "english": "Philemon",
+        "portuguese": "Filemom"
+      },
+      {
+        "code": "hb",
+        "english": "Hebrews",
+        "portuguese": "Hebreus"
+      },
+      {
+        "code": "tg",
+        "english": "James",
+        "portuguese": "Tiago"
+      },
+      {
+        "code": "1pe",
+        "english": "1 Peter",
+        "portuguese": "1 Pedro"
+      },
+      {
+        "code": "2pe",
+        "english": "2 Peter",
+        "portuguese": "2 Pedro"
+      },
+      {
+        "code": "1jo",
+        "english": "1 John",
+        "portuguese": "1 João"
+      },
+      {
+        "code": "2jo",
+        "english": "2 John",
+        "portuguese": "2 João"
+      },
+      {
+        "code": "3jo",
+        "english": "3 John",
+        "portuguese": "3 João"
+      },
+      {
+        "code": "jd",
+        "english": "Jude",
+        "portuguese": "Judas"
+      },
+      {
+        "code": "ap",
+        "english": "Revelation",
+        "portuguese": "Apocalipse"
+      }
+    ]
+  }
+}
