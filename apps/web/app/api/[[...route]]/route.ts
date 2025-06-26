@@ -7,9 +7,9 @@ import {
   findChapter,
   findVerse,
   formatBookInfo,
-  formatChapter,
+  formatChapterResponse,
   formatErrorResponse,
-  formatVerse,
+  formatVerseResponse,
   getAvailableTranslations,
   getMultipleChapters,
   getTranslation,
@@ -56,7 +56,7 @@ app.get('/bible/:translation/books', async (c) => {
     const { translation } = c.req.param()
     const bibleData = await getTranslation(translation)
 
-    const books = bibleData.books.map((book) => ({
+    const books = bibleData.map((book) => ({
       name: book.name,
       displayName: book.name,
       chapters: book.chapters.length,
@@ -149,7 +149,13 @@ app.get('/bible/:translation/:book/:chapter/:verse', async (c) => {
     const chapterData = findChapter(bookData, chapterNum)
     const verseData = findVerse(chapterData, verseNum)
 
-    const formattedVerse = formatVerse(verseData, book, chapterNum, translation)
+    const formattedVerse = formatVerseResponse(
+      verseData,
+      verseNum,
+      chapterNum,
+      bookData,
+      translation,
+    )
 
     return c.json(formattedVerse)
   } catch (error) {
@@ -204,9 +210,10 @@ app.get('/bible/:translation/:book/:chapter', async (c) => {
     const bookData = findBook(bibleData, book)
     const chapterData = findChapter(bookData, chapterNum)
 
-    const formattedChapter = formatChapter(
+    const formattedChapter = formatChapterResponse(
       chapterData,
-      book,
+      chapterNum,
+      bookData,
       translation,
       from || to ? { from, to } : undefined,
     )
@@ -231,15 +238,15 @@ app.get('/bible/full/:translation', async (c) => {
     const formattedData = {
       translation,
       name: translation === 'nva' ? 'Nova Versão Almeida' : translation,
-      books: bibleData.books.map((book) => ({
+      books: bibleData.map((book) => ({
         name: book.name,
         displayName: book.name,
-        chapters: book.chapters.map((chapter) => ({
-          chapter: chapter.chapter,
-          name: chapter.name,
-          verses: chapter.verses.map((verse) => ({
-            verse: verse.verse,
-            text: verse.text,
+        chapters: book.chapters.map((chapter, chapterIndex) => ({
+          chapter: chapterIndex + 1,
+          name: `${book.name} ${chapterIndex + 1}`,
+          verses: chapter.map((verse, verseIndex) => ({
+            verse: verseIndex + 1,
+            text: verse,
           })),
         })),
       })),
@@ -262,12 +269,12 @@ app.get('/bible/:translation/:book/full', async (c) => {
       translation,
       book,
       displayName: bookData.name,
-      chapters: bookData.chapters.map((chapter) => ({
-        chapter: chapter.chapter,
-        name: chapter.name,
-        verses: chapter.verses.map((verse) => ({
-          verse: verse.verse,
-          text: verse.text,
+      chapters: bookData.chapters.map((chapter, chapterIndex) => ({
+        chapter: chapterIndex + 1,
+        name: `${bookData.name} ${chapterIndex + 1}`,
+        verses: chapter.map((verse, verseIndex) => ({
+          verse: verseIndex + 1,
+          text: verse,
         })),
       })),
     }
