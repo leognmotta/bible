@@ -1,5 +1,7 @@
 import { Scripture } from './types'
 
+export * from './types'
+
 export const availableTranslations = ['nva'] as const
 
 export const loadTranslation = async (code: string) => {
