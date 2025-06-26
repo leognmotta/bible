@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import TranslationCredits from '@/components/ui/translation-credits'
 import { getBookNamePt } from '@/lib/utils/book-utils'
 
 interface Book {
@@ -591,6 +592,12 @@ export default function ScriptureReader({
                 )
               })}
             </div>
+
+            {/* Translation Credits */}
+            <TranslationCredits
+              translationKey={chapterData?.translation.key}
+              className="mt-8 md:mt-12"
+            />
           </div>
         ) : (
           <div className="text-muted-foreground pt-8 text-center">

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import TranslationCredits from '@/components/ui/translation-credits'
 
 interface Translation {
   key: string
@@ -173,6 +174,12 @@ export default function VerseShareClient({
               </Button>
             </Link>
           </div>
+
+          {/* Translation Credits */}
+          <TranslationCredits
+            translationKey={chapterData.translation.key}
+            className="mt-8 md:mt-12"
+          />
         </div>
       </div>
     </div>
