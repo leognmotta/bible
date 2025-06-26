@@ -22,6 +22,7 @@ import {
   isValidBookName,
   searchBooks,
 } from '@/lib/api/book-abbreviations'
+import { getBookNamePt } from '@/lib/utils/book-utils'
 
 export const runtime = 'edge'
 
@@ -57,8 +58,9 @@ app.get('/bible/:translation/books', async (c) => {
     const bibleData = await getTranslation(translation)
 
     const books = bibleData.map((book) => ({
+      code: book.code,
       name: book.name,
-      displayName: book.name,
+      displayName: getBookNamePt(book.code) || book.name,
       chapters: book.chapters.length,
       aliases: getBookAliases(book.name),
       abbreviations: BOOK_ABBREVIATIONS[book.name.toLowerCase()] || [],
